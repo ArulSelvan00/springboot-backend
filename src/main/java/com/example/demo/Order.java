@@ -3,30 +3,61 @@ package com.example.demo;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "orders") // optional, but avoids reserved keyword issues
+@Table(name = "orders")
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String phoneNumber;
-    private String orderDetails;
+    private String productName;
+    private int quantity;
+    private double totalPrice;
+    private String paymentId;
+    private String village;
+    private String pincode;
+    private String address;
+    private String contact;
 
-    // Constructors
     public Order() {}
-    public Order(String phoneNumber, String orderDetails) {
-        this.phoneNumber = phoneNumber;
-        this.orderDetails = orderDetails;
+
+    public Order(String productName, int quantity, double totalPrice, String paymentId,
+                 String village, String pincode, String address, String contact) {
+        this.productName = productName;
+        this.quantity = quantity;
+        this.totalPrice = totalPrice;
+        this.paymentId = paymentId;
+        this.village = village;
+        this.pincode = pincode;
+        this.address = address;
+        this.contact = contact;
     }
 
-    // Getters & Setters
+    // ✅ Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
 
-    public String getOrderDetails() { return orderDetails; }
-    public void setOrderDetails(String orderDetails) { this.orderDetails = orderDetails; }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+
+    public double getTotalPrice() { return totalPrice; }
+    public void setTotalPrice(double totalPrice) { this.totalPrice = totalPrice; }
+
+    public String getPaymentId() { return paymentId; }
+    public void setPaymentId(String paymentId) { this.paymentId = paymentId; }
+
+    public String getVillage() { return village; }
+    public void setVillage(String village) { this.village = village; }
+
+    public String getPincode() { return pincode; }
+    public void setPincode(String pincode) { this.pincode = pincode; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getContact() { return contact; }
+    public void setContact(String contact) { this.contact = contact; }
 }

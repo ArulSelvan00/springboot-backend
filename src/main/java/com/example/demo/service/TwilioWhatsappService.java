@@ -2,35 +2,38 @@ package com.example.demo.service;
 
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.type.PhoneNumber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TwilioWhatsappService {
 
-    @Value("${twilio.account.sid}")
+    @Value("${twilio.accountSid}")
     private String accountSid;
 
-    @Value("${twilio.auth.token}")
+    @Value("${twilio.authToken}")
     private String authToken;
 
     @Value("${twilio.whatsapp.from}")
     private String fromNumber;
 
-    public String sendWhatsappMessage(String to, String body) {
+    public String sendWhatsappMessage(String to, String message) {
         try {
             Twilio.init(accountSid, authToken);
 
-            Message message = Message.creator(
-                    new PhoneNumber("whatsapp:" + to),
-                    new PhoneNumber(fromNumber),
-                    body
+            // Format number for WhatsApp API
+            String formatted = to.startsWith("whatsapp:") ? to : "whatsapp:" + to;
+
+            Message.creator(
+                    new com.twilio.type.PhoneNumber(formatted),
+                    new com.twilio.type.PhoneNumber(fromNumber),
+                    message
             ).create();
 
-            return "WhatsApp sent successfully! SID: " + message.getSid();
+            return "✅ WhatsApp message sent to " + to;
         } catch (Exception e) {
-            return "Failed to send WhatsApp: " + e.getMessage();
+            e.printStackTrace();
+            return "❌ Failed to send WhatsApp message: " + e.getMessage();
         }
     }
 }

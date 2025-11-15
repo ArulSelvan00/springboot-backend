@@ -1,23 +1,43 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.UserOrder;
-import com.example.demo.UserOrderRepository;
+import com.example.demo.model.DeliveredOrder;
+import com.example.demo.service.OrderService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:3000") // Allow React
 @RestController
 @RequestMapping("/api/admin/orders")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AdminOrderController {
 
-    private final UserOrderRepository orderRepository;
+    @Autowired
+    private OrderService orderService;
 
-    public AdminOrderController(UserOrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
+    // GET /api/admin/orders (Active Orders List)
+    @GetMapping
+    public List<UserOrder> getAllActiveOrders() {
+        return orderService.getAllOrders();
     }
 
-    @GetMapping
-    public List<UserOrder> getAllOrders() {
-        return orderRepository.findAll();
+    // POST /api/admin/orders/{id}/out-for-delivery
+    @PostMapping("/{id}/out-for-delivery")
+    public String outForDelivery(@PathVariable Long id) {
+        boolean ok = orderService.markOutForDelivery(id);
+        return ok ? "Order marked as Out for Delivery" : "Order not found";
+    }
+
+    // POST /api/admin/orders/{id}/deliver
+    @PostMapping("/{id}/deliver")
+    public String deliverOrder(@PathVariable Long id) {
+        boolean ok = orderService.moveToDelivered(id);
+        return ok ? "Order marked as Delivered" : "Order not found";
+    }
+
+    // GET /api/admin/orders/delivered (Delivered History List)
+    @GetMapping("/delivered")
+    public List<DeliveredOrder> getDeliveredOrders() {
+        return orderService.getDeliveredOrders();
     }
 }
