@@ -12,34 +12,32 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://springboot-backend-558q.onrender.com/")
 public class ProductController {
 
     @Autowired
     private ProductService productService;
 
-    // --- ⭐ FIX: ADDED MISSING BASE GET MAPPING (For fetching the list) ---
+    // GET: Fetch all products
     @GetMapping
     public List<Product> getAllProducts() {
         return productService.findAllProducts();
     }
-    // ----------------------------------------------------------------------
 
+    // GET: Fetch product by ID
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        // Assume you have a findProductById method in your ProductService
         Optional<Product> productOpt = productService.findProductById(id);
-
-        // This handles returning a 200 OK with the product or a 404 Not Found
         return productOpt.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // POST: Create a new product (Requires 'form-data' request body)
     @PostMapping
     public ResponseEntity<?> createProduct(
             @RequestParam("name") String name, @RequestParam("description") String description,
             @RequestParam("price") double price, @RequestParam("stock") int stock,
             @RequestParam("subCategoryId") Long subCategoryId,
-            @RequestPart("coverImage") MultipartFile coverImageFile,
+            @RequestPart("coverImage") MultipartFile coverImageFile, // REQUIRED FILE
             @RequestPart(value = "image1", required = false) MultipartFile image1File,
             @RequestPart(value = "image2", required = false) MultipartFile image2File,
             @RequestPart(value = "image3", required = false) MultipartFile image3File) {
@@ -58,6 +56,7 @@ public class ProductController {
         }
     }
 
+    // PUT: Update an existing product
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProduct(
             @PathVariable Long id,
@@ -81,6 +80,7 @@ public class ProductController {
         }
     }
 
+    // DELETE: Delete a product
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         try {

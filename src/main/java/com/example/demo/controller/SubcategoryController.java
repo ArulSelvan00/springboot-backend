@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/subcategories")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://springboot-backend-558q.onrender.com/")
 public class SubcategoryController {
 
     @Autowired private SubcategoryService subcategoryService;
