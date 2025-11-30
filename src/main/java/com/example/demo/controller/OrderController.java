@@ -14,8 +14,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "http://localhost:3000")
-public class OrderController {
+@CrossOrigin(
+        origins = "https://endearing-heliotrope-12d102.netlify.app",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
+)public class OrderController {
 
     @Autowired private UserOrderRepository userOrderRepository;
     @Autowired private ProductRepository productRepository;
