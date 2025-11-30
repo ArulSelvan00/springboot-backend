@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "https://endearing-heliotrope-12d102.netlify.app/")
+@CrossOrigin(origins = "https://endearing-heliotrope-12d102.netlify.app")
 public class ProductController {
 
     @Autowired

@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/subcategories")
-@CrossOrigin(origins = "https://endearing-heliotrope-12d102.netlify.app/")
+@CrossOrigin(origins = "https://endearing-heliotrope-12d102.netlify.app")
 public class SubcategoryController {
 
     @Autowired private SubcategoryService subcategoryService;
