@@ -15,13 +15,20 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // ✅ Allow your frontend origin
-        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000")); // or your deployed frontend URL
+        // 🚀 CRITICAL FIX: Add your Netlify URL and the localhost URL
+        config.setAllowedOriginPatterns(Arrays.asList(
+                "https://endearing-heliotrope-12d102.netlify.app", // ✅ Your Deployed Frontend
+                "http://localhost:3000",
+                "http://localhost:8080" // If you test locally on Spring Boot port
+        ));
+
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
-        config.setAllowCredentials(true); // allowed with origin patterns, not "*"
+        // This is necessary since you are using allowedOriginPatterns
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Apply this configuration to all paths ("/**")
         source.registerCorsConfiguration("/**", config);
 
         return new CorsFilter(source);
