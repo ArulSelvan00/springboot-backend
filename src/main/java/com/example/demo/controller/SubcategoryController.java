@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.cache.annotation.Cacheable; // NEW
-import org.springframework.cache.annotation.CacheEvict; // NEW
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -29,10 +29,10 @@ public class SubcategoryController {
     @Autowired private CategoryRepository categoryRepository;
 
     // --------------------------------------------------------------------------------
-    // --- READ OPERATIONS ---
+    // --- READ OPERATIONS (WITH CACHING) ---
     // --------------------------------------------------------------------------------
 
-    // 🚀 CACHEABLE: Caches subcategories based on their parent category ID. Key: subcategories::categoryId
+    // 🚀 CACHEABLE: Caches subcategories based on their parent category ID.
     @Cacheable(value = "subcategories", key = "#categoryId")
     @GetMapping("/by-category/{categoryId}")
     public List<SubCategory> getSubCategoriesByCategory(@PathVariable Long categoryId) {
@@ -40,7 +40,7 @@ public class SubcategoryController {
         return subcategoryService.getSubcategoriesByCategoryId(categoryId);
     }
 
-    // 🚀 CACHEABLE: Caches all subcategories. Key: subcategories::all
+    // 🚀 CACHEABLE: Caches all subcategories.
     @Cacheable(value = "subcategories", key = "'all'")
     @GetMapping("/all")
     public List<SubCategory> getAllSubcategories() {
@@ -48,7 +48,7 @@ public class SubcategoryController {
         return subcategoryService.findAll();
     }
 
-    // 🚀 CACHEABLE: Caches a single subcategory by ID. Key: subcategories::id
+    // 🚀 CACHEABLE: Caches a single subcategory by ID.
     @Cacheable(value = "subcategories", key = "#id")
     @GetMapping("/{id}")
     public ResponseEntity<SubCategory> getSubCategoryById(@PathVariable Long id) {
@@ -57,17 +57,19 @@ public class SubcategoryController {
     }
 
     // --------------------------------------------------------------------------------
-    // --- CREATE OPERATION ---
+    // --- CREATE OPERATION (FIXED: Uses @RequestPart for image) ---
     // --------------------------------------------------------------------------------
 
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on creation.
+    // Maps to: POST /api/subcategories
     @CacheEvict(value = "subcategories", allEntries = true)
     @PostMapping
     public ResponseEntity<SubCategory> addSubcategory(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("categoryId") Long categoryId,
-            @RequestParam(value = "image", required = false) MultipartFile image) {
+            // ✅ FIX: Use @RequestPart for optional MultipartFile handling in a multipart/form-data request
+            @RequestPart(value = "image", required = false) MultipartFile image) {
 
         try {
             Optional<Category> categoryOpt = categoryRepository.findById(categoryId);
@@ -97,7 +99,7 @@ public class SubcategoryController {
     }
 
     // --------------------------------------------------------------------------------
-    // --- UPDATE OPERATION ---
+    // --- UPDATE OPERATION (WITH CACHING) ---
     // --------------------------------------------------------------------------------
 
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on update.
@@ -140,7 +142,7 @@ public class SubcategoryController {
     }
 
     // --------------------------------------------------------------------------------
-    // --- DELETE OPERATION ---
+    // --- DELETE OPERATION (WITH CACHING) ---
     // --------------------------------------------------------------------------------
 
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on deletion.
