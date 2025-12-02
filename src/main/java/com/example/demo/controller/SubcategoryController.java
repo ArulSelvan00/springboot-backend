@@ -1,9 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.SubCategory;
-import com.example.demo.model.Category;
-import com.example.demo.repository.CategoryRepository;
-import com.example.demo.service.SubcategoryService;
+import com.example.demo.model.Category; // Needed to link to Category
+import com.example.demo.repository.CategoryRepository; // Needed to fetch parent Category
+import com.example.demo.service.SubcategoryService; // Assume you have this service
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.transaction.Transactional; // Use jakarta.transaction.Transactional consistent with your Category code
 
 import java.io.IOException;
 import java.util.List;
@@ -26,21 +26,13 @@ import java.util.Optional;
 public class SubcategoryController {
 
     @Autowired private SubcategoryService subcategoryService;
-    @Autowired private CategoryRepository categoryRepository;
+    @Autowired private CategoryRepository categoryRepository; // To find the parent category
 
     // --------------------------------------------------------------------------------
     // --- READ OPERATIONS (WITH CACHING) ---
     // --------------------------------------------------------------------------------
 
-    // 🚀 CACHEABLE: Caches subcategories based on their parent category ID.
-    @Cacheable(value = "subcategories", key = "#categoryId")
-    @GetMapping("/by-category/{categoryId}")
-    public List<SubCategory> getSubCategoriesByCategory(@PathVariable Long categoryId) {
-        System.out.println("--- DB CALL: Fetching subcategories by category ID: " + categoryId + " ---");
-        return subcategoryService.getSubcategoriesByCategoryId(categoryId);
-    }
-
-    // 🚀 CACHEABLE: Caches all subcategories.
+    // 🚀 CACHEABLE: Caches all subcategories. Key: subcategories::all
     @Cacheable(value = "subcategories", key = "'all'")
     @GetMapping("/all")
     public List<SubCategory> getAllSubcategories() {
@@ -48,7 +40,15 @@ public class SubcategoryController {
         return subcategoryService.findAll();
     }
 
-    // 🚀 CACHEABLE: Caches a single subcategory by ID.
+    // 🚀 CACHEABLE: Caches subcategories based on their parent category ID. Key: subcategories::categoryId
+    @Cacheable(value = "subcategories", key = "#categoryId")
+    @GetMapping("/by-category/{categoryId}")
+    public List<SubCategory> getSubCategoriesByCategory(@PathVariable Long categoryId) {
+        System.out.println("--- DB CALL: Fetching subcategories by category ID: " + categoryId + " ---");
+        return subcategoryService.getSubcategoriesByCategoryId(categoryId);
+    }
+
+    // 🚀 CACHEABLE: Caches a single subcategory by ID. Key: subcategories::id
     @Cacheable(value = "subcategories", key = "#id")
     @GetMapping("/{id}")
     public ResponseEntity<SubCategory> getSubCategoryById(@PathVariable Long id) {
@@ -67,9 +67,9 @@ public class SubcategoryController {
             // Handles text fields from FormData
             @RequestParam("name") String name,
             @RequestParam("description") String description,
-            @RequestParam("categoryId") Long categoryId,
-            // Handles the file part from FormData (optional)
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestParam("categoryId") Long categoryId, // New field to link the parent category
+            // Handles the file part from FormData (using @RequestParam like your Category code)
+            @RequestParam(value = "image", required = false) MultipartFile image) {
 
         try {
             Optional<Category> categoryOpt = categoryRepository.findById(categoryId);
@@ -81,7 +81,7 @@ public class SubcategoryController {
             SubCategory subCategory = new SubCategory();
             subCategory.setName(name);
             subCategory.setDescription(description);
-            subCategory.setCategory(categoryOpt.get());
+            subCategory.setCategory(categoryOpt.get()); // Set the parent category object
 
             if (image != null && !image.isEmpty()) {
                 subCategory.setImage(image.getBytes());
@@ -110,8 +110,8 @@ public class SubcategoryController {
             @PathVariable Long id,
             @RequestParam("name") String name,
             @RequestParam("description") String description,
-            @RequestParam("categoryId") Long categoryId,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestParam("categoryId") Long categoryId, // Allows changing the parent category
+            @RequestParam(value = "image", required = false) MultipartFile image) {
 
         Optional<SubCategory> existingSubcategoryOpt = subcategoryService.findSubcategoryById(id);
         Optional<Category> categoryOpt = categoryRepository.findById(categoryId);
@@ -149,7 +149,7 @@ public class SubcategoryController {
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on deletion.
     @CacheEvict(value = "subcategories", allEntries = true)
     @DeleteMapping("/{id}")
-    @Transactional
+    @Transactional // Ensures the deletion is atomic
     public ResponseEntity<Void> deleteSubcategory(@PathVariable Long id) {
         if (!subcategoryService.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -159,6 +159,7 @@ public class SubcategoryController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             e.printStackTrace();
+            // CONFLICT status suggests a foreign key constraint (e.g., linked products) is blocking the delete
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
