@@ -57,23 +57,24 @@ public class SubcategoryController {
     }
 
     // --------------------------------------------------------------------------------
-    // --- CREATE OPERATION (FIXED: Uses @RequestPart for image) ---
+    // --- CREATE OPERATION (POST /api/subcategories) ---
     // --------------------------------------------------------------------------------
 
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on creation.
-    // Maps to: POST /api/subcategories
     @CacheEvict(value = "subcategories", allEntries = true)
     @PostMapping
     public ResponseEntity<SubCategory> addSubcategory(
+            // Handles text fields from FormData
             @RequestParam("name") String name,
             @RequestParam("description") String description,
             @RequestParam("categoryId") Long categoryId,
-            // ✅ FIX: Use @RequestPart for optional MultipartFile handling in a multipart/form-data request
+            // Handles the file part from FormData (optional)
             @RequestPart(value = "image", required = false) MultipartFile image) {
 
         try {
             Optional<Category> categoryOpt = categoryRepository.findById(categoryId);
             if (categoryOpt.isEmpty()) {
+                // If the Category ID doesn't exist, return a clear error
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
 
@@ -99,7 +100,7 @@ public class SubcategoryController {
     }
 
     // --------------------------------------------------------------------------------
-    // --- UPDATE OPERATION (WITH CACHING) ---
+    // --- UPDATE OPERATION (PUT /api/subcategories/{id}) ---
     // --------------------------------------------------------------------------------
 
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on update.
@@ -142,7 +143,7 @@ public class SubcategoryController {
     }
 
     // --------------------------------------------------------------------------------
-    // --- DELETE OPERATION (WITH CACHING) ---
+    // --- DELETE OPERATION (DELETE /api/subcategories/{id}) ---
     // --------------------------------------------------------------------------------
 
     // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on deletion.
