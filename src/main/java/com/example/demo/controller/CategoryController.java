@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.cache.annotation.Cacheable; // NEW
+import org.springframework.cache.annotation.CacheEvict; // NEW
 import jakarta.transaction.Transactional;
 
 import java.io.IOException;
@@ -15,7 +17,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/categories")
-// ✅ UPDATED CORS: Explicitly allow all methods, including OPTIONS (pre-flight check)
 @CrossOrigin(
         origins = "https://endearing-heliotrope-12d102.netlify.app",
         methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
@@ -27,13 +28,16 @@ public class CategoryController {
 
     // --- READ OPERATIONS ---
 
-    // GET: Fetch all categories (GET /api/categories)
+    // 🚀 CACHEABLE: Caches all categories. Key: categories::all
+    @Cacheable(value = "categories", key = "'all'")
     @GetMapping
     public List<Category> getAllCategories() {
+        System.out.println("--- DB CALL: Fetching all categories ---");
         return categoryRepository.findAll();
     }
 
-    // GET: Fetch category by ID (GET /api/categories/{id})
+    // 🚀 CACHEABLE: Caches category by ID. Key: categories::id
+    @Cacheable(value = "categories", key = "#id")
     @GetMapping("/{id}")
     public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
         Optional<Category> categoryOpt = categoryRepository.findById(id);
@@ -42,8 +46,8 @@ public class CategoryController {
 
     // --- CREATE OPERATION ---
 
-    // POST: Add a new category (POST /api/categories)
-    // ✅ PATH CHANGE: Removed "/add" to follow REST convention
+    // 🧹 CACHE EVICT: Clears the entire 'categories' cache on creation.
+    @CacheEvict(value = "categories", allEntries = true)
     @PostMapping
     public ResponseEntity<Category> addCategory(
             @RequestParam("name") String name,
@@ -54,16 +58,13 @@ public class CategoryController {
             category.setName(name);
             category.setDescription(description);
 
-            // Check for image and set bytes
             if (image != null && !image.isEmpty()) {
                 category.setImage(image.getBytes());
             }
 
-            // Return 201 Created status for successful resource creation
             return ResponseEntity.status(HttpStatus.CREATED).body(categoryRepository.save(category));
 
         } catch (IOException e) {
-            // Handle file reading exception specifically
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
@@ -74,7 +75,8 @@ public class CategoryController {
 
     // --- UPDATE OPERATION ---
 
-    // PUT: Update an existing category (PUT /api/categories/{id})
+    // 🧹 CACHE EVICT: Clears the entire 'categories' cache on update.
+    @CacheEvict(value = "categories", allEntries = true)
     @PutMapping("/{id}")
     public ResponseEntity<Category> updateCategory(
             @PathVariable Long id,
@@ -92,7 +94,6 @@ public class CategoryController {
             category.setName(name);
             category.setDescription(description);
 
-            // Update image if a new one is provided
             if (image != null && !image.isEmpty()) {
                 category.setImage(image.getBytes());
             }
@@ -110,9 +111,10 @@ public class CategoryController {
 
     // --- DELETE OPERATION ---
 
-    // DELETE: Delete a category (DELETE /api/categories/{id})
+    // 🧹 CACHE EVICT: Clears the entire 'categories' cache on deletion.
+    @CacheEvict(value = "categories", allEntries = true)
     @DeleteMapping("/{id}")
-    @Transactional // Ensures the deletion operation is atomic
+    @Transactional
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         if (!categoryRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -122,9 +124,6 @@ public class CategoryController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             e.printStackTrace();
-            // Status 409 Conflict: Typically used to indicate a resource
-            // conflict, like a database constraint violation (e.g., this
-            // category is still referenced by subcategories or products).
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }

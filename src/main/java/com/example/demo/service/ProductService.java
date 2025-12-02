@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.cache.annotation.Cacheable; // ⭐ NEW: Cacheable
+import org.springframework.cache.annotation.CacheEvict; // ⭐ NEW: CacheEvict
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -18,16 +20,31 @@ public class ProductService {
     @Autowired private ProductRepository productRepository;
     @Autowired private SubcategoryRepository subcategoryRepository;
 
-    // ⭐ FIX: @Transactional(readOnly = true) ensures the session stays open for full serialization
+    // --------------------------------------------------------------------------------
+    // --- READ OPERATIONS (CACHEABLE) ---
+    // --------------------------------------------------------------------------------
+
+    // 🚀 CACHEABLE: Caches the list of ALL products. Key: products::all
+    @Cacheable(value = "products", key = "'all'")
     @Transactional(readOnly = true)
     public List<Product> findAllProducts() {
+        System.out.println("--- DB CALL: Fetching all products ---"); // Visible on cache miss
         return productRepository.findAll();
     }
 
+    // 🚀 CACHEABLE: Caches a single product by ID. Key: products::id
+    @Cacheable(value = "products", key = "#id")
     public Optional<Product> findProductById(Long id) {
+        System.out.println("--- DB CALL: Fetching product by ID: " + id + " ---"); // Visible on cache miss
         return productRepository.findById(id);
     }
 
+    // --------------------------------------------------------------------------------
+    // --- WRITE OPERATIONS (CACHE EVICTION) ---
+    // --------------------------------------------------------------------------------
+
+    // 🧹 CACHE EVICT: Clears the 'all' products list AND the specific product entry on creation.
+    @CacheEvict(value = "products", allEntries = true) // allEntries=true clears products::all
     @Transactional
     public Product saveNewProduct(
             String name, String description, double price, int stock,
@@ -55,6 +72,8 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    // 🧹 CACHE EVICT: Clears the 'all' products list AND the specific updated product entry.
+    @CacheEvict(value = "products", allEntries = true) // Clears the products::all list
     @Transactional
     public Product updateProduct(
             Long id, String name, String description, double price, int stock,
@@ -83,6 +102,8 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    // 🧹 CACHE EVICT: Clears the 'all' products list AND the specific deleted product entry.
+    @CacheEvict(value = "products", allEntries = true) // Clears the products::all list
     @Transactional
     public boolean deleteProduct(Long id) {
         if (productRepository.existsById(id)) {

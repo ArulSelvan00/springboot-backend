@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.cache.annotation.Cacheable; // NEW
+import org.springframework.cache.annotation.CacheEvict; // NEW
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -17,7 +19,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/subcategories")
-// ✅ UPDATED CORS: Explicitly allow all required methods for robust cross-origin operation
 @CrossOrigin(
         origins = "https://endearing-heliotrope-12d102.netlify.app",
         methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
@@ -31,19 +32,24 @@ public class SubcategoryController {
     // --- READ OPERATIONS ---
     // --------------------------------------------------------------------------------
 
-    // GET /api/subcategories/by-category/{categoryId} (CRITICAL for dropdown loading)
+    // 🚀 CACHEABLE: Caches subcategories based on their parent category ID. Key: subcategories::categoryId
+    @Cacheable(value = "subcategories", key = "#categoryId")
     @GetMapping("/by-category/{categoryId}")
     public List<SubCategory> getSubCategoriesByCategory(@PathVariable Long categoryId) {
+        System.out.println("--- DB CALL: Fetching subcategories by category ID: " + categoryId + " ---");
         return subcategoryService.getSubcategoriesByCategoryId(categoryId);
     }
 
-    // GET /api/subcategories/all (Used by CategoryForm to display the existing list)
+    // 🚀 CACHEABLE: Caches all subcategories. Key: subcategories::all
+    @Cacheable(value = "subcategories", key = "'all'")
     @GetMapping("/all")
     public List<SubCategory> getAllSubcategories() {
+        System.out.println("--- DB CALL: Fetching all subcategories ---");
         return subcategoryService.findAll();
     }
 
-    // GET /api/subcategories/{id}
+    // 🚀 CACHEABLE: Caches a single subcategory by ID. Key: subcategories::id
+    @Cacheable(value = "subcategories", key = "#id")
     @GetMapping("/{id}")
     public ResponseEntity<SubCategory> getSubCategoryById(@PathVariable Long id) {
         Optional<SubCategory> subCategoryOpt = subcategoryService.findSubcategoryById(id);
@@ -54,19 +60,18 @@ public class SubcategoryController {
     // --- CREATE OPERATION ---
     // --------------------------------------------------------------------------------
 
-    // POST /api/subcategories
-    // ✅ PATH CHANGE: Adopting RESTful convention (POST to the collection root)
+    // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on creation.
+    @CacheEvict(value = "subcategories", allEntries = true)
     @PostMapping
     public ResponseEntity<SubCategory> addSubcategory(
             @RequestParam("name") String name,
             @RequestParam("description") String description,
-            @RequestParam("categoryId") Long categoryId, // Parent category ID
+            @RequestParam("categoryId") Long categoryId,
             @RequestParam(value = "image", required = false) MultipartFile image) {
 
         try {
             Optional<Category> categoryOpt = categoryRepository.findById(categoryId);
             if (categoryOpt.isEmpty()) {
-                // If parent category is not found, return 400 Bad Request
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
 
@@ -81,7 +86,6 @@ public class SubcategoryController {
 
             SubCategory savedSubCategory = subcategoryService.saveSubcategory(subCategory);
 
-            // Return 201 Created status
             return ResponseEntity.status(HttpStatus.CREATED).body(savedSubCategory);
         } catch (IOException e) {
             e.printStackTrace();
@@ -96,7 +100,8 @@ public class SubcategoryController {
     // --- UPDATE OPERATION ---
     // --------------------------------------------------------------------------------
 
-    // PUT /api/subcategories/{id}
+    // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on update.
+    @CacheEvict(value = "subcategories", allEntries = true)
     @PutMapping("/{id}")
     public ResponseEntity<SubCategory> updateSubcategory(
             @PathVariable Long id,
@@ -138,7 +143,8 @@ public class SubcategoryController {
     // --- DELETE OPERATION ---
     // --------------------------------------------------------------------------------
 
-    // DELETE /api/subcategories/{id}
+    // 🧹 CACHE EVICT: Clears the entire 'subcategories' cache on deletion.
+    @CacheEvict(value = "subcategories", allEntries = true)
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<Void> deleteSubcategory(@PathVariable Long id) {
@@ -150,7 +156,6 @@ public class SubcategoryController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             e.printStackTrace();
-            // Status 409 Conflict: Usually due to products still linked to this subcategory
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
